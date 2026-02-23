@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 
 export default function ScanPage() {
   const router = useRouter();
@@ -18,15 +19,10 @@ export default function ScanPage() {
     setLoading(true);
 
     try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/scans`,
-      {
+      const response = await apiFetch("/scans", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
-        credentials: "include",
-      }
-    );
+      });
 
       const data = await response.json();
 
@@ -78,10 +74,9 @@ export default function ScanPage() {
                 }`}
             />
 
-            {/* Paste indicator */}
             {pasted && (
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-300 animate-fade-in">
-                Pasted ✓
+                Pasted
               </span>
             )}
           </div>

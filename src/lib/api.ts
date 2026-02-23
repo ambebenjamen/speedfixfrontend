@@ -1,7 +1,5 @@
 const envApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
-const isDev = process.env.NODE_ENV !== "production";
-
-export const API_URL = envApiUrl || (isDev ? "http://localhost:4000" : "");
+export const API_URL = envApiUrl || "";
 
 export const apiFetch = async (path: string, options: RequestInit = {}) => {
   if (!API_URL) {
