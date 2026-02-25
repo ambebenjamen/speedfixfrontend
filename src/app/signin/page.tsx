@@ -50,15 +50,16 @@ export default function SignInPage() {
               setLoading(true);
               setError("");
               try {
+                const normalizedEmail = email.trim().toLowerCase();
                 const res = await apiFetch("/auth/request", {
                   method: "POST",
-                  body: JSON.stringify({ email }),
+                  body: JSON.stringify({ email: normalizedEmail }),
                 });
                 if (!res.ok) {
                   const data = await res.json().catch(() => null);
                   throw new Error(data?.error || "Unable to send email");
                 }
-                setSentTo(email);
+                setSentTo(normalizedEmail);
                 router.push("/check-email");
               } catch (err: unknown) {
                 setError(
