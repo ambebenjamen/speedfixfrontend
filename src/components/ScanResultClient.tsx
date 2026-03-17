@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import SiteFooter from "@/components/SiteFooter";
-import { API_URL } from "@/lib/api";
+import { API_URL, apiFetch, awaitRenderWake } from "@/lib/api";
 
 type Issue = {
   id: string;
@@ -41,26 +41,43 @@ export default function ScanResultClient({ scanId }: { scanId: string }) {
   const [scan, setScan] = useState<ScanResponse | null>(null);
   const [status, setStatus] = useState("PENDING");
   const [stuck, setStuck] = useState(false);
+  const [waitingBackend, setWaitingBackend] = useState(true);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     const start = Date.now();
-    const fetchScan = async () => {
-      const response = await fetch(`${API_URL}/scans/${scanId}`, {
-        credentials: "include",
-      });
-      if (!response.ok) return;
-      const data = (await response.json()) as ScanResponse;
-      setScan(data);
-      setStatus(data.status);
-      if (data.status === "PENDING" || data.status === "RUNNING") {
-        if (Date.now() - start > 60000) {
-          setStuck(true);
-        }
-        timer = setTimeout(fetchScan, 4000);
+
+    const initScan = async () => {
+      try {
+        // Wait for Render backend to wake up (free tier cold starts)
+        await awaitRenderWake({ timeoutMs: 600000 }); // 10min
+        setWaitingBackend(false);
+      } catch (e) {
+        console.error(e);
+        setWaitingBackend(false);
+        setStatus("WAITING_BACKEND");
+        // Optionally continue polling anyway
       }
+
+      const fetchScan = async () => {
+        const response = await fetch(`${API_URL}/scans/${scanId}`, {
+          credentials: "include",
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as ScanResponse;
+        setScan(data);
+        setStatus(data.status);
+        if (data.status === "PENDING" || data.status === "RUNNING") {
+          if (Date.now() - start > 60000) {
+            setStuck(true);
+          }
+          timer = setTimeout(fetchScan, 4000);
+        }
+      };
+      fetchScan();
     };
-    fetchScan();
+
+    initScan();
     return () => clearTimeout(timer);
   }, [scanId]);
 
@@ -83,9 +100,8 @@ export default function ScanResultClient({ scanId }: { scanId: string }) {
       <div className="mx-auto max-w-6xl px-6 pb-12">
         <div className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
           <p className="text-xs uppercase tracking-widest text-white/50">Scan</p>
-          {/* Updated h1 with truncation */}
           <h1 className="truncate max-w-full text-2xl font-semibold" title={scan?.url}>
-              {scan?.url ?? "Scanning..."}
+            {scan?.url ?? "Scanning..."}
           </h1>
           <div className="flex flex-wrap gap-3 text-xs uppercase tracking-wide text-white/60">
             <span className="rounded-full border border-white/10 px-3 py-1">{status}</span>
@@ -99,6 +115,14 @@ export default function ScanResultClient({ scanId }: { scanId: string }) {
             )}
           </div>
         </div>
+
+        {waitingBackend && (
+          <div className="mt-6 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-8 text-center text-sm text-emerald-100">
+            <div className="inline-flex h-8 w-8 animate-spin rounded-full border-2 border-emerald-400 border-t-transparent mx-auto mb-4"></div>
+            <p>Waking up backend (Render free tier cold start takes up to 7 minutes)...</p>
+            <p className="mt-2 text-white/70">Please wait or refresh.</p>
+          </div>
+        )}
 
         {scan?.isLimited && (
           <div className="mt-6 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-5 text-sm text-emerald-100">
@@ -140,6 +164,8 @@ export default function ScanResultClient({ scanId }: { scanId: string }) {
                 ? "We could not complete the scan. Try again in a minute."
                 : status === "COMPLETE"
                 ? "No major issues found."
+                : status === "WAITING_BACKEND"
+                ? "Backend is waking up..."
                 : stuck
                 ? "This scan is taking a while."
                 : "Analyzing issues..."}

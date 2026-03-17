@@ -9,8 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.7.2",
-    "@prisma/client": "^6.7.0",
     "axios": "^1.7.9",
     "bullmq": "^5.33.1",
     "cross-env": "^7.0.3",
@@ -19,7 +17,6 @@
     "ioredis": "^5.4.1",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
-    "next-auth": "^5.0.0-beta.25",
     "nodemailer": "^7.0.13",
     "pdf-lib": "^1.17.1",
     "puppeteer": "^23.11.1",
