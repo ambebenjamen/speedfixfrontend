@@ -32,19 +32,32 @@ const plans = [
 
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const startCheckout = async (plan: "pro" | "agency") => {
     setLoading(plan);
-    const response = await apiFetch("/stripe/checkout", {
-      method: "POST",
-      body: JSON.stringify({ plan }),
-    });
-    const data = await response.json();
-    if (data?.url) {
+    setError("");
+    try {
+      const response = await apiFetch("/stripe/checkout", {
+        method: "POST",
+        body: JSON.stringify({ plan }),
+      });
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(data?.error || "Checkout is temporarily unavailable.");
+      }
+      if (!data?.url) {
+        throw new Error("Checkout URL is missing. Please try again.");
+      }
+
       router.push(data.url);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unable to start checkout.");
+    } finally {
+      setLoading(null);
     }
-    setLoading(null);
   };
 
   return (
@@ -84,6 +97,11 @@ export default function PricingPage() {
             </div>
           ))}
         </div>
+        {error ? (
+          <div className="mt-6 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200">
+            {error}
+          </div>
+        ) : null}
       </div>
       <SiteFooter />
     </div>

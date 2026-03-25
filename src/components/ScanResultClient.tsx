@@ -60,9 +60,7 @@ export default function ScanResultClient({ scanId }: { scanId: string }) {
       }
 
       const fetchScan = async () => {
-        const response = await fetch(`${API_URL}/scans/${scanId}`, {
-          credentials: "include",
-        });
+        const response = await apiFetch(`/scans/${scanId}`);
         if (!response.ok) return;
         const data = (await response.json()) as ScanResponse;
         setScan(data);

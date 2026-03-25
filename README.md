@@ -21,6 +21,7 @@ Open `http://localhost:3000`.
 
 ## Environment Variables
 Copy `.env.example` to `.env.local` and fill in values.
+Set `NEXT_PUBLIC_API_URL` to your backend base URL (for example `https://your-backend.onrender.com`).
 Set `ENABLE_HEADLESS=1` if you want Puppeteer to collect live page metadata.
 
 ## Deployment Notes
